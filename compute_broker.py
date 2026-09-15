@@ -8,7 +8,7 @@ import asyncpg
 app = FastAPI(title="ApexSovereign Enterprise Compute Broker API", version="1.0.0")
 
 # Database connection pool configuration
-DATABASE_URL = "postgresql://postgres:Kodakksaint777@db.eeclrffbjbnapsajmtqn.supabase.co:5432/postgres"
+DATABASE_URL = "postgresql://postgres.eeclrffbjbnapsajmtqn:Kodakksaint777@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
 PAYPAL_CLIENT_ID = os.getenv("BAAnJ3a3oIIe5LKdWQwr10uR8Uc4nayYYlfkHNtaTcJhZD5E5QQo9ULhoBQ5eCYB24P1LJL3VTltrNLaE8", "")
 PAYPAL_CLIENT_SECRET = os.getenv("EDze29dnVH0Bgmz29XmpgavSEXv7OxbKP6ziB-QqOndkgnNo-ntTytBQmjATri6zPVAFGl3C5J1uC6Ci", "")
 PAYPAL_API_BASE = os.getenv("PAYPAL_API_BASE", "https://api-m.paypal.com") # Use sandbox.paypal.com for testing
