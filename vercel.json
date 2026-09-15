@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "compute_broker.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "compute_broker.py"
+    }
+  ]
+}
