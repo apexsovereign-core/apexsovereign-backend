@@ -39,7 +39,7 @@ def require_env(name: str) -> str:
     return value
 
 
-DATABASE_URL = require_env("postgresql://postgres.eeclrffbjbnapsajmtqn:Kodakksaint777@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres")
+DATABASE_URL = require_env("DATABASE_URL = require_env("postgresql://postgres.eeclrffbjbnapsajmtqn:Kodakksaint7@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres")
 PAYPAL_CLIENT_ID = require_env("BAAnJ3a3oIIe5LKdWQwr10uR8Uc4nayYYlfkHNtaTcJhZD5E5QQo9ULhoBQ5eCYB24P1LJL3VTltrNLaE8")
 PAYPAL_CLIENT_SECRET = require_env("EDze29dnVH0Bgmz29XmpgavSEXv7OxbKP6ziB-QqOndkgnNo-ntTytBQmjATri6zPVAFGl3C5J1uC6Ci")
 PAYPAL_WEBHOOK_ID = require_env("0GS90368KN5946222")
