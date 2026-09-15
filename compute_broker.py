@@ -17,9 +17,14 @@ PAYPAL_API_BASE = os.getenv("PAYPAL_API_BASE", "https://api-m.paypal.com") # Use
 async def startup_db():
     app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, ssl="require")
 
-@app.on_event("shutdown")
-async def shutdown_db():
-    await app.state.db_pool.close()
+@app.on_event("startup")
+async def startup_db():
+    try:
+        app.state.db_pool = await asyncpg.create_pool(DATABASE_URL, ssl="require")
+        print("Database pool connected successfully!")
+    except Exception as e:
+        print(f"Failed to connect to database: {e}")
+        raise e
 
 class PaymentVerificationRequest(BaseModel):
     order_id: str
