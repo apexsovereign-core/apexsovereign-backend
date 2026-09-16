@@ -11,7 +11,8 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy import (
     create_engine,
@@ -29,14 +30,40 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ---------------------------------------------------------------------------
-# Database Configuration & Session Factory
+# Database Configuration & Session Factory (Resilient URL Parser)
 # ---------------------------------------------------------------------------
-RAW_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./apexsovereign.db")
+def resolve_database_url() -> str:
+    """
+    Cleans, normalizes, and validates DATABASE_URL.
+    Falls back gracefully to SQLite if DATABASE_URL is missing, empty, or unparseable.
+    """
+    from sqlalchemy.engine.url import make_url
 
-if RAW_DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = RAW_DATABASE_URL.replace("postgres://", "postgresql://", 1)
-else:
-    DATABASE_URL = RAW_DATABASE_URL
+    raw = (os.getenv("DATABASE_URL") or "").strip().strip("'\"")
+
+    # Handle accidental key=value pasting inside Render's value field
+    if raw.startswith("DATABASE_URL="):
+        raw = raw.split("=", 1)[1].strip().strip("'\"")
+
+    # If empty or placeholder text
+    if not raw or raw.lower() in ["none", "null", "undefined", "sqlite:///"]:
+        print("[ApexSovereign DB] No valid DATABASE_URL found. Initializing local storage: sqlite:///./apexsovereign.db")
+        return "sqlite:///./apexsovereign.db"
+
+    # Convert dialect prefix for modern SQLAlchemy
+    if raw.startswith("postgres://"):
+        raw = raw.replace("postgres://", "postgresql://", 1)
+
+    try:
+        make_url(raw)
+        return raw
+    except Exception as parse_err:
+        print(f"[ApexSovereign DB Warning] Could not parse DATABASE_URL ({parse_err}).")
+        print("[ApexSovereign DB] Falling back safely to local storage: sqlite:///./apexsovereign.db")
+        return "sqlite:///./apexsovereign.db"
+
+
+DATABASE_URL = resolve_database_url()
 
 engine_args: Dict[str, Any] = {"echo": False}
 if DATABASE_URL.startswith("sqlite"):
@@ -130,7 +157,6 @@ COMPUTE_TIER_CATALOG = {
 
 
 def generate_hmac_lease_token(job_id: str, tenant_id: str, expires_epoch: int) -> str:
-    """Generates a cryptographically secure HMAC-SHA256 lease authorization signature."""
     secret = os.getenv("APP_SECRET_API_KEY", "apexsovereign-dev-secret-key-default").encode("utf-8")
     message = f"{job_id}:{tenant_id}:{expires_epoch}".encode("utf-8")
     signature = hmac.new(secret, message, hashlib.sha256).hexdigest()
@@ -200,7 +226,6 @@ def get_tenant_balance(tenant_id: str, db: Session = Depends(get_db)):
 
 @compute_router.post("/dispatch", response_model=LeaseResponse)
 def dispatch_compute_lease(req: LeaseRequest, db: Session = Depends(get_db)):
-    """Allocates hardware cluster lease, holds balance, signs HMAC lease token."""
     tier_info = COMPUTE_TIER_CATALOG.get(req.resource_tier)
     if not tier_info:
         raise HTTPException(
@@ -208,7 +233,7 @@ def dispatch_compute_lease(req: LeaseRequest, db: Session = Depends(get_db)):
             detail=f"Resource tier '{req.resource_tier}' is invalid.",
         )
 
-    # Idempotency check
+    # Check Idempotency
     existing_lease = db.query(ComputeLease).filter(ComputeLease.job_id == req.idempotency_key).first()
     if existing_lease:
         user = db.query(User).filter(User.tenant_id == req.tenant_id).first()
@@ -239,7 +264,6 @@ def dispatch_compute_lease(req: LeaseRequest, db: Session = Depends(get_db)):
             detail=f"Insufficient balance. Required: ${hold_amount:.2f}, Available: ${float(user.credits_balance):.2f}.",
         )
 
-    # Debit hold & create lease
     user.credits_balance = float(user.credits_balance) - hold_amount
 
     job_id = f"job-{uuid.uuid4().hex[:8]}"
@@ -334,3 +358,52 @@ def release_compute_lease(job_id: str, db: Session = Depends(get_db)):
         new_balance=float(user.credits_balance) if user else 0.0,
         message=f"Lease released. ${refund_amount:.4f} surplus refunded to balance.",
     )
+
+
+# ---------------------------------------------------------------------------
+# Fallback FastAPI App Instance
+# Enables seamless execution if Render is configured with 'uvicorn compute_broker:app'
+# ---------------------------------------------------------------------------
+app = FastAPI(
+    title="ApexSovereign.ai Compute Broker API",
+    version="2.4.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+
+@app.get("/", tags=["Health"])
+def root_status():
+    return {
+        "service": "ApexSovereign.ai Compute Broker API",
+        "status": "OPERATIONAL",
+        "database": get_db_health(),
+    }
+
+
+@app.get("/health", tags=["Health"])
+def health_check():
+    return {
+        "status": "HEALTHY",
+        "database": get_db_health(),
+    }
+
+
+app.include_router(compute_router)
+
+try:
+    from payment_router import payment_router
+    app.include_router(payment_router)
+except Exception:
+    pass
