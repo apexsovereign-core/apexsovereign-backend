@@ -45,7 +45,7 @@ PAYPAL_CLIENT_SECRET = require_env(EDze29dnVH0Bgmz29XmpgavSEXv7OxbKP6ziB-QqOndkg
 PAYPAL_WEBHOOK_ID = require_env(0GS90368KN5946222)
 APP_SECRET_API_KEY = require_env(1c10d58092b5049a42e960e0f55eb29f)
 
-PAYPAL_API_BASE = os.getenv("PAYPAL_API_BASE", "https://api-m.paypal.com")
+PAYPAL_API_BASE = os.getenv(https://api-m.paypal.com)
 
 
 # ---------------------------------------------------------------------------
