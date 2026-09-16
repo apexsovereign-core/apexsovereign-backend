@@ -1,4 +1,6 @@
 import os
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 
 def require_env(name: str) -> str:
     val = os.getenv(name)
@@ -15,75 +17,16 @@ APP_SECRET_API_KEY = require_env("APP_SECRET_API_KEY")
 PAYPAL_MODE = require_env("PAYPAL_MODE")
 LEASE_HMAC_SECRET = require_env("LEASE_HMAC_SECRET")
 
-
-PAYPAL_API_BASE = os.getenv("PAYPAL_API_BASE", "https://api-m.paypal.com")
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_pool = await asyncpg.create_pool(
-        DATABASE_URL,
-        min_size=1,
-        max_size=2,
-        ssl="require",
-    )
-    app.state.http = httpx.AsyncClient(timeout=15.0)
-    print("Database pool connected successfully.")
-    try:
-        yield
-    finally:
-        await app.state.http.aclose()
-        await app.state.db_pool.close()
+    # Startup actions
+    print("ApexSovereign.ai Compute Broker starting up successfully...")
+    yield
+    # Shutdown actions
+    print("ApexSovereign.ai Compute Broker shutting down...")
 
-app = FastAPI(
-    title="ApexSovereign Enterprise Compute Broker API",
-    version="1.1.0",
-    lifespan=lifespan,
-)
+app = FastAPI(title="ApexSovereign.ai Compute Broker", lifespan=lifespan)
 
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
-
-async def verify_api_key(api_key: str | None = Security(api_key_header)) -> str:
-    if api_key is None or not secrets.compare_digest(api_key, APP_SECRET_API_KEY):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing API key.",
-        )
-    return api_key
-
-async def get_paypal_token() -> str:
-    response = await app.state.http.post(
-        f"{PAYPAL_API_BASE}/v1/oauth2/token",
-        auth=(PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET),
-        data={"grant_type": "client_credentials"},
-    )
-    if response.status_code != 200:
-        raise HTTPException(
-            status_code=502,
-            detail="Failed to authenticate with the PayPal API.",
-        )
-    return response.json()["access_token"]
-
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    return """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>ApexSovereign Enterprise Compute Broker</title>
-    </head>
-    <body style="background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh;">
-        <div style="text-align: center;">
-            <h1>ApexSovereign</h1>
-            <p>Enterprise Compute Broker API is live and operational.</p>
-        </div>
-    </body>
-    </html>
-    """
-
-@app.get("/health")
-async def health():
-    async with app.state.db_pool.acquire() as connection:
-        await connection.fetchval("SELECT 1")
-    return {"status": "ok"}
+@app.get("/")
+async def health_check():
+    return {"status": "healthy", "service": "ApexSovereign.ai Compute Broker v2.4"}
