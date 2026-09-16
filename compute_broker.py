@@ -1,36 +1,20 @@
-import json
 import os
-import secrets
-from contextlib import asynccontextmanager
-
-import asyncpg
-import httpx
-from fastapi import FastAPI, HTTPException, Request, Security, status
-from fastapi.responses import HTMLResponse
-from fastapi.security import APIKeyHeader
-from pydantic import BaseModel
-
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
 
 def require_env(name: str) -> str:
-    value = os.getenv(name)
-    if not value:
-        raise RuntimeError(
-            f"Missing required environment variable: {name}. "
-            "Add it under Environment in the Render dashboard."
-        )
-    return value
+    val = os.getenv(name)
+    if not val:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return val
 
-
-DATABASE_URL = require_env(DATABASE_URL = require_env("DATABASE_URL")
+# Core Environment & Secret Vault Configuration
+DATABASE_URL = require_env("DATABASE_URL")
 PAYPAL_CLIENT_ID = require_env("BAAnJ3a3oIIe5LKdWQwr10uR8Uc4nayYYlfkHNtaTcJhZD5E5QQo9ULhoBQ5eCYB24P1LJL3VTltrNLaE8")
 PAYPAL_CLIENT_SECRET = require_env("EDze29dnVH0Bgmz29XmpgavSEXv7OxbKP6ziB-QqOndkgnNo-ntTytBQmjATri6zPVAFGl3C5J1uC6Ci")
 PAYPAL_WEBHOOK_ID = require_env("0GS90368KN5946222")
 APP_SECRET_API_KEY = require_env("0f1e949703be5e566425059d98d795f8")
+PAYPAL_MODE = require_env("LIVE")
+LEASE_HMAC_SECRET = require_env("sec_hmac_uz9zjkjkjji8vsypcwj8bk")
+
 
 PAYPAL_API_BASE = os.getenv("PAYPAL_API_BASE", "https://api-m.paypal.com")
 
