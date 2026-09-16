@@ -1,2 +1,0 @@
-[tool.vercel]
-entrypoint = "compute_broker:app"
