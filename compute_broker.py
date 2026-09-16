@@ -8,12 +8,12 @@ def require_env(name: str) -> str:
 
 # Core Environment & Secret Vault Configuration
 DATABASE_URL = require_env("DATABASE_URL")
-PAYPAL_CLIENT_ID = require_env("BAAnJ3a3oIIe5LKdWQwr10uR8Uc4nayYYlfkHNtaTcJhZD5E5QQo9ULhoBQ5eCYB24P1LJL3VTltrNLaE8")
-PAYPAL_CLIENT_SECRET = require_env("EDze29dnVH0Bgmz29XmpgavSEXv7OxbKP6ziB-QqOndkgnNo-ntTytBQmjATri6zPVAFGl3C5J1uC6Ci")
-PAYPAL_WEBHOOK_ID = require_env("0GS90368KN5946222")
-APP_SECRET_API_KEY = require_env("0f1e949703be5e566425059d98d795f8")
-PAYPAL_MODE = require_env("LIVE")
-LEASE_HMAC_SECRET = require_env("sec_hmac_uz9zjkjkjji8vsypcwj8bk")
+PAYPAL_CLIENT_ID = require_env("PAYPAL_CLIENT_ID")
+PAYPAL_CLIENT_SECRET = require_env("PAYPAL_CLIENT_SECRET")
+PAYPAL_WEBHOOK_ID = require_env("PAYPAL_WEBHOOK_ID")
+APP_SECRET_API_KEY = require_env("APP_SECRET_API_KEY")
+PAYPAL_MODE = require_env("PAYPAL_MODE")
+LEASE_HMAC_SECRET = require_env("LEASE_HMAC_SECRET")
 
 
 PAYPAL_API_BASE = os.getenv("PAYPAL_API_BASE", "https://api-m.paypal.com")
