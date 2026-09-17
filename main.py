@@ -107,3 +107,31 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 10000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+@app.on_event("startup")
+def on_startup():
+    init_db()
+    # Autonomous 24/7 background worker thread
+    try:
+        import threading
+        from worker_engine import run_asynchronous_worker
+        if os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
+            worker_thread = threading.Thread(target=run_asynchronous_worker, daemon=True)
+            worker_thread.start()
+            print("[ApexSovereign] Autonomous 24/7 worker thread running.")
+    except Exception as worker_exc:
+        print(f"[ApexSovereign Worker] Worker startup note: {worker_exc}")
+
+# Mount Routers
+app.include_router(compute_router)
+
+try:
+    from payment_router import payment_router
+    app.include_router(payment_router)
+except Exception:
+    pass
+
+try:
+    from paypal_gateway import paypal_gateway_router
+    app.include_router(paypal_gateway_router)
+except Exception:
+    pass
