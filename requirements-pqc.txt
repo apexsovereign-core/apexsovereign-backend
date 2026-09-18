@@ -1,0 +1,3 @@
+# Requires liboqs native prerequisites; pin and verify in your controlled image.
+-r requirements.txt
+liboqs-python==0.16.0
